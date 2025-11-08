@@ -1,0 +1,100 @@
+{
+    "6654471304": {
+        "username": "L\u00f2 Ch\u1ed1n",
+        "invite_balance": 0,
+        "task_balance": 0,
+        "invited_by": null,
+        "invited_count": 0,
+        "last_check_in": null,
+        "is_new_user": true,
+        "first_start": false
+    },
+    "7583050026": {
+        "username": "Hoang Ph\u00fac",
+        "invite_balance": 10000,
+        "task_balance": 0,
+        "invited_by": "8196174785",
+        "invited_count": 1,
+        "last_check_in": "2025-11-08T14:08:45.326208",
+        "is_new_user": false,
+        "first_start": false
+    },
+    "8196174785": {
+        "username": "Nam Sky",
+        "invite_balance": 10000,
+        "task_balance": 0,
+        "invited_by": null,
+        "invited_count": 1,
+        "last_check_in": "2025-11-08T14:07:57.811644",
+        "is_new_user": true,
+        "first_start": false
+    },
+    "8356373953": {
+        "username": "Vahnix",
+        "invite_balance": 5000,
+        "task_balance": 0,
+        "invited_by": "7583050026",
+        "invited_count": 0,
+        "last_check_in": "2025-11-08T14:10:30.387288",
+        "is_new_user": false,
+        "first_start": false
+    },
+    "7157440644": {
+        "username": "",
+        "invite_balance": 5000,
+        "task_balance": 0,
+        "invited_by": null,
+        "invited_count": 0,
+        "last_check_in": "2025-11-08T15:04:48.235357",
+        "is_new_user": true
+    },
+    "6092764884": {
+        "username": "My",
+        "invite_balance": 5000,
+        "task_balance": 0,
+        "invited_by": null,
+        "invited_count": 0,
+        "last_check_in": "2025-11-08T16:25:25.539394",
+        "is_new_user": true,
+        "first_start": false
+    },
+    "8327167039": {
+        "username": "1004917\ud83e\udd81",
+        "invite_balance": 5000,
+        "task_balance": 0,
+        "invited_by": null,
+        "invited_count": 0,
+        "last_check_in": "2025-11-08T16:43:55.343559",
+        "is_new_user": true,
+        "first_start": false
+    },
+    "6807403616": {
+        "username": "",
+        "invite_balance": 5000,
+        "task_balance": 0,
+        "invited_by": null,
+        "invited_count": 0,
+        "last_check_in": "2025-11-08T16:32:26.397397",
+        "is_new_user": true
+    },
+    "7436004129": {
+        "username": "Hhhhh",
+        "invite_balance": 0,
+        "task_balance": 0,
+        "invited_by": null,
+        "invited_count": 0,
+        "last_check_in": null,
+        "is_new_user": true,
+        "first_start": false
+    },
+    "7638763906": {
+        "username": "tom",
+        "invite_balance": 0,
+        "task_balance": 0,
+        "invited_by": null,
+        "invited_count": 0,
+        "last_check_in": null,
+        "is_new_user": true,
+        "first_start": false
+    }
+}
