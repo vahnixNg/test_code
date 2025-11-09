@@ -4,14 +4,25 @@ import time
 import random
 import json
 import os
+import threading 
 from datetime import datetime, timedelta
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
 
-# --- TRUNG TÂM ĐIỀU KHIỂN CỦA CẬU (4 Ổ KHOÁ) ---
+# --- TRUNG TÂM ĐIỀU KHIỂN CỦA CẬU (5 Ổ KHOÁ - V6.15) ---
+# Ổ KHOÁ 1: Chìa khoá Bot (Của cậu)
 BOT_TOKEN = "8278136953:AAF1RD6S874aE_n_KOb1hSAr3NLsElAYG6U" 
+
+# Ổ KHOÁ 2: ID ADMIN (LẤY TỪ @userinfobot)
+ADMIN_ID = 8196174785 # <--- BẮT BUỘC THAY BẰNG SỐ ID CỦA CẬU
+
+# Ổ KHOÁ 3: Username Admin (Của cậu)
 ADMIN_USERNAME = "@NAMSKY88" 
+
+# Ổ KHOÁ 4: ID Nhóm CHÍNH (Của cậu)
 GROUP_CHAT_ID = "@casinonoidiaa" 
-AGENT_LINK = "m.fly88j.com/?id=733040027"
+
+# Ổ KHOÁ 5: Link Đại Lý "Lối 2"
+AGENT_LINK = "https://m.fly88j.com/?id=733040027"
 
 # --- CÁC CÀI ĐẶT CỦA PHỄU (V6.8) ---
 MIN_WITHDRAW_INVITE = 500000 
@@ -54,7 +65,7 @@ def save_users(data):
     with open(DB_FILE, 'w') as f:
         json.dump(data, f, indent=4)
 
-# --- HÀM "LÕI" ĐÃ ĐƯỢC VÁ LỖI (V6.8) ---
+# --- HÀM "LÕI" (V6.8) ---
 def get_user(users, user_id): 
     """Lấy data từ 1 database đã tải, nếu chưa có thì tạo mới"""
     user_id_str = str(user_id)
@@ -68,9 +79,7 @@ def get_user(users, user_id):
             "last_check_in": None, 
             "is_new_user": True 
         }
-    # --- ĐÂY LÀ BẢN VÁ: Trả về 2 "vật liệu" ---
     return users, users[user_id_str] 
-# --- HẾT VÁ ---
 
 # --- MODULE KIẾN TRÚC MENU (V6.6) ---
 def create_main_menu():
@@ -121,13 +130,13 @@ def handle_start(message):
     if len(referral_code) > 1:
         referrer_id = referral_code[1]
         
-        users, new_user_data = get_user(users, user_id) # Sửa tên hàm
+        users, new_user_data = get_user(users, user_id) 
         
         if new_user_data["is_new_user"] and str(referrer_id) != str(user_id):
             new_user_data["is_new_user"] = False 
             new_user_data["invited_by"] = referrer_id
             
-            users, referrer_data = get_user(users, referrer_id) # Sửa tên hàm
+            users, referrer_data = get_user(users, referrer_id) 
             referrer_data["invite_balance"] += INVITE_REWARD
             referrer_data["invited_count"] += 1
             
@@ -147,9 +156,8 @@ def handle_start(message):
 
     # 3. KÍCH HOẠT PHỄU (NẾU ĐÃ JOIN)
     if not is_new_invite:
-        users, user_data = get_user(load_users(), user_id) # Sửa tên hàm
+        users, user_data = get_user(load_users(), user_id) 
     else:
-        # Lấy lại DB và user_data để đảm bảo dữ liệu là mới nhất
         users, user_data = get_user(load_users(), user_id) 
         
     user_data["username"] = user_name 
@@ -179,7 +187,7 @@ def handle_taikhoan(message):
     user_id = message.from_user.id
     if not check_if_joined(user_id, message): return 
     
-    users, user_data = get_user(load_users(), user_id) # Sửa tên hàm
+    users, user_data = get_user(load_users(), user_id) 
     response = (
         f"👤 **Tên:** {user_data.get('username', message.from_user.first_name)}\n"
         f"🆔 **ID:** `{user_id}` (Dùng ID này để Admin duyệt Rút tiền)\n"
@@ -196,7 +204,7 @@ def handle_moiban(message):
     if not check_if_joined(user_id, message): return 
     
     bot_username = bot.get_me().username
-    users, user_data = get_user(load_users(), user_id) # Sửa tên hàm
+    users, user_data = get_user(load_users(), user_id) 
     
     response = (
         f"🎉 Mời bạn bè tham gia nhóm **{GROUP_CHAT_ID}** VÀ sử dụng Bot này để nhận **{INVITE_REWARD:,} VNĐ** / 1 lượt mời!\n"
@@ -215,7 +223,7 @@ def handle_diemdanh(message):
     user_id = message.from_user.id
     if not check_if_joined(user_id, message): return 
 
-    users, user_data = get_user(load_users(), user_id) # Sửa tên hàm
+    users, user_data = get_user(load_users(), user_id) 
     last_check_in_str = user_data.get('last_check_in')
     current_time = datetime.now()
     
@@ -267,7 +275,7 @@ def handle_ruttien_info(message):
     user_id = message.from_user.id
     if not check_if_joined(user_id, message): return 
     
-    users, user_data = get_user(load_users(), user_id) # Sửa tên hàm
+    users, user_data = get_user(load_users(), user_id) 
     safe_admin_username = ADMIN_USERNAME.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`')
 
     response = (
@@ -308,7 +316,159 @@ Admin sẽ duyệt và cộng CODE FLY88 vào 'Số dư [Nhiệm Vụ FLY88]' đ
     
     bot.reply_to(message, response, parse_mode='Markdown', reply_markup=markup)
 
-# --- CHẠY BOT ---
+# --- MODULE 4: KIẾN TRÚC "LOA PHƯỜNG" (V6.15 MỚI - GIỮ ID CHẶN) ---
+@bot.message_handler(commands=['broadcast'])
+def handle_broadcast(message):
+    # 1. KIỂM TRA "Ổ KHOÁ 2"
+    if str(message.from_user.id) != str(ADMIN_ID):
+        bot.reply_to(message, "🚫 Mày không phải 'Chủ'. Cút.")
+        return
+
+    # 2. XÁC ĐỊNH CHẾ ĐỘ PHÁT SÓNG
+    is_media = False
+    media_file_id = None
+    media_type = None
+    caption = None
+    
+    # Kịch bản 1: Cậu TRẢ LỜI vào một bức ảnh/video/document
+    if message.reply_to_message:
+        replied_msg = message.reply_to_message
+        
+        if replied_msg.photo:
+            is_media = True
+            media_type = 'photo'
+            media_file_id = replied_msg.photo[-1].file_id 
+            caption = replied_msg.caption if replied_msg.caption else ""
+        elif replied_msg.video:
+            is_media = True
+            media_type = 'video'
+            media_file_id = replied_msg.video.file_id
+            caption = replied_msg.caption if replied_msg.caption else ""
+        elif replied_msg.document:
+            is_media = True
+            media_type = 'document'
+            media_file_id = replied_msg.document.file_id
+            caption = replied_msg.caption if replied_msg.caption else ""
+        
+    # Lấy nội dung TEXT (của lệnh /broadcast)
+    try:
+        text_content = message.text.split(maxsplit=1)[1] 
+        if is_media:
+            caption = text_content
+        else:
+            caption = text_content
+            
+    except IndexError:
+        if not is_media:
+            bot.reply_to(message, "🚫 Lỗi cú pháp! Gõ:\n`/broadcast [Nội dung tin nhắn]`\nHoặc:\n**TRẢ LỜI** vào ảnh/video và gõ `/broadcast [Caption]`")
+            return
+    
+    # 3. THI CÔNG "PHÁT LOA"
+    users = load_users()
+    user_ids_to_send = list(users.keys()) # Lấy danh sách ID
+    
+    if is_media:
+        bot.reply_to(message, f"📣 Bắt đầu 'Phát Ảnh/Video' cho {len(user_ids_to_send)} 'gà'. Chờ...")
+    else:
+        bot.reply_to(message, f"📣 Bắt đầu 'Phát Loa Text' cho {len(user_ids_to_send)} 'gà'. Chờ...")
+
+    sent_count = 0
+    blocked_count = 0
+
+    for user_id_str in user_ids_to_send:
+        user_id = int(user_id_str)
+        try:
+            if is_media:
+                # Gửi MEDIA
+                if media_type == 'photo':
+                    bot.send_photo(user_id, media_file_id, caption=caption, parse_mode='Markdown')
+                elif media_type == 'video':
+                    bot.send_video(user_id, media_file_id, caption=caption, parse_mode='Markdown')
+                elif media_type == 'document':
+                    bot.send_document(user_id, media_file_id, caption=caption, parse_mode='Markdown')
+            else:
+                # Gửi TEXT thuần
+                bot.send_message(user_id, caption, parse_mode='Markdown')
+            
+            # --- ĐẾM THÀNH CÔNG (FIXED V6.13) ---
+            sent_count += 1
+            
+        except telebot.apihelper.ApiTelegramException as e:
+            # --- ĐẾM LỖI (V6.15: KHÔNG XÓA ID) ---
+            if e.result_json.get('error_code') in [403, 400]:
+                blocked_count += 1
+            
+        except Exception as e:
+            # Bắt các lỗi khác
+            blocked_count += 1
+            
+        time.sleep(0.1) 
+
+    # 4. KHÔNG XÓA ID (V6.15) - Chỉ lưu lại dữ liệu (đã được làm ở các module khác)
+
+    # 5. BÁO CÁO CHO "CHỦ"
+    bot.reply_to(message, f"✅ **'LOA PHƯỜNG' HOÀN TẤT!**\n\n"
+                          f"📬 Đã gửi thành công: **{sent_count}** 'gà'\n"
+                          f"🛡️ Đã chặn bot/lỗi: **{blocked_count}** 'gà' (Tổng số ID trong DB: **{len(users)}**)", parse_mode='Markdown')
+
+# --- MODULE 5: KIẾN TRÚC "BÁO CÁO" (V6.10) ---
+
+# Lệnh "Hút" DB thủ công
+@bot.message_handler(commands=['getdb'])
+def handle_get_db(message):
+    # 1. KIỂM TRA "Ổ KHOÁ 2"
+    if str(message.from_user.id) != str(ADMIN_ID):
+        bot.reply_to(message, "🚫 Mày không phải 'Chủ'. Cút.")
+        return
+        
+    # 2. "HÚT" FILE
+    try:
+        if not os.path.exists(DB_FILE):
+            bot.reply_to(message, "🚫 Lỗi: Không tìm thấy file `users_database.json`.")
+            return
+            
+        with open(DB_FILE, 'rb') as f:
+            bot.send_document(ADMIN_ID, f, caption="File backup 'gà' (Hút thủ công)")
+            
+    except Exception as e:
+        bot.reply_to(message, f"🚫 Lỗi khi 'hút' file: {e}")
+
+# "Cỗ Máy Thời Gian" Tự Động Backup
+def send_daily_backup():
+    if ADMIN_ID == 123456789: # Kiểm tra xem "Chủ" đã thay ID chưa
+        print("!!! CẢNH BÁO: ADMIN_ID chưa được thay đổi. 'Lò' Tự Động Backup sẽ KHÔNG chạy.")
+        return # Dừng "Lò" này lại
+
+    while True:
+        # 1. Chờ 24 giờ
+        print(f"[V6.15 Backup] Đã ngủ. Sẽ backup sau 24 giờ...")
+        time.sleep(24 * 60 * 60) # 86400 giây
+        
+        # 2. "Hút" File
+        try:
+            if not os.path.exists(DB_FILE):
+                bot.send_message(ADMIN_ID, f"🚫 Lỗi Backup Tự Động: Không tìm thấy file `{DB_FILE}`.")
+            else:
+                with open(DB_FILE, 'rb') as f:
+                    bot.send_document(ADMIN_ID, f, caption=f"💾 Backup 'Gà' Tự Động\nNgày: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"[V6.15 Backup] Đã gửi backup tự động cho 'Chủ'.")
+            
+        except Exception as e:
+            print(f"!!! Lỗi nghiêm trọng 'Lò' Tự Động Backup: {e}")
+            try:
+                bot.send_message(ADMIN_ID, f"🚫 Lỗi nghiêm trọng 'Lò' Tự Động Backup: {e}")
+            except:
+                pass 
+
+# --- CHẠY BOT (V6.15 - "TỐI ƯU HÓA") ---
 if __name__ == "__main__":
-    print("🚀 Bot Tặng Code V6.8 (Đã Fix Lỗi 'ValueError: unpack') đang chạy...")
+    print("🚀 Bắt đầu khởi chạy 'cỗ máy' V6.15 (FIX BÁO CÁO & GIỮ TẤT CẢ ID)...")
+    
+    # 1. Khởi chạy "Lò" Tự Động Backup (luồng riêng)
+    backup_thread = threading.Thread(target=send_daily_backup, daemon=True)
+    backup_thread.start()
+    print("... 'Lò' Tự Động Backup đã bật.")
+
+    # 2. Khởi chạy "Lò" Chính (luồng chính)
+    print("... 'Lò' Chính (Polling) đang chạy 24/7.")
     bot.polling(none_stop=True)
