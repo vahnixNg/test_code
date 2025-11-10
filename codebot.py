@@ -19,7 +19,7 @@ ADMIN_ID = 8196174785 # <--- BẮT BUỘC THAY BẰNG SỐ ID CỦA CẬU
 ADMIN_USERNAME = "@NAMSKY88" 
 
 # Ổ KHOÁ 4: ID Nhóm CHÍNH (Của cậu)
-GROUP_CHAT_ID = "@casinonoidiaa" 
+GROUP_CHAT_ID = "@casinonoidiaaa" 
 
 # Ổ KHOÁ 5: Link Đại Lý "Lối 2"
 AGENT_LINK = "https://m.fly88j.com/?id=733040027"
