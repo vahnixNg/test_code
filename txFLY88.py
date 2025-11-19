@@ -1,231 +1,291 @@
 import telebot
 import hashlib
-import struct
-from datetime import datetime
-import random # Thêm random để điều chỉnh độ tin cậy và lời khuyên
+import time
+import random
+import json
+import os
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
-# --- TRUNG TÂM ĐIỀU KHIỂN CỦA BẠN (3 Ổ KHOÁ) ---
+# --- CẤU HÌNH HỆ THỐNG (SỬA TẠI ĐÂY) ---
+BOT_TOKEN = "8247971504:AAFCvmdSCPLQQp9v5-6RBQUOyYrGEiq-UJs" # Thay token của bạn
+ADMIN_ID = 8196174785 # ID của bạn
+ADMIN_USERNAME = "NamSky88" # Username Admin
+CHANNEL_ID = "@ToolsTaiXiu" 
+CHANNEL_LINK = "https://t.me/ToolsTaiXiu"
 
-# Ổ KHOÁ 1: Chìa khoá Bot
-BOT_TOKEN = "8380092974:AAH5szL1AEXwf4tWQhUxZG9qKwmcGsKSb_U" # Dán token của bạn vào đây
+# --- DANH SÁCH VIP CỨNG (Luôn được add khi khởi động) ---
+PERMANENT_VIPS = [
+    ADMIN_ID,
+    ]
 
-# Ổ KHOÁ 2: ID Admin của bạn
-ADMIN_ID = 8356373953 # Thay bằng ID Admin của BẠN
+# --- CƠ SỞ DỮ LIỆU ---
+USERS_FILE = "vip_members.json"
 
-# Ổ KHOÁ 3: Username Admin của bạn (để gà liên hệ)
-ADMIN_USERNAME = "@namsky88" # Ví dụ: "@CSN_NhaTrong"
-
-# --- CƠ SỞ DỮ LIỆU CỦA PHỄU ---
-
-# "Sổ Trắng" (Whitelist) - Người được duyệt
-authorized_users = {
-    ADMIN_ID, 7984561571,8196174785,7436004129
-}
-
-# --- KHỞI TẠO HỆ THỐNG ---
+# Khởi tạo bot
 bot = telebot.TeleBot(BOT_TOKEN)
 
+# --- HÀM HỆ THỐNG: QUẢN LÝ VIP ---
+def load_vip_users():
+    if os.path.exists(USERS_FILE):
+        try:
+            with open(USERS_FILE, 'r') as f:
+                users = json.load(f)
+        except:
+            users = []
+    else:
+        users = []
 
-# --- PHẦN LÕI "UY TÍN GIẢ LẬP" (V5.3 - ĐÃ NÂNG CẤP) ---
-class TaiXiuPredictorV5_3:
-    def __init__(self):
-        pass # Không cần lưu lịch sử nữa
+    is_changed = False
+    for uid in PERMANENT_VIPS:
+        if uid not in users:
+            users.append(uid)
+            is_changed = True
+    
+    if is_changed:
+        save_vip_users(users)
+    return users
 
-    def advanced_md5_analysis_v5_3(self, md5_hash):
-        """
-        Phân tích MD5 V5.3:
-        1. Cân bằng Tài/Xỉu hơn.
-        2. Độ tin cậy ngẫu nhiên 60-99%.
-        """
-        # --- Phần tính toán dựa trên hash vẫn giữ nguyên để đảm bảo "nhất quán" ---
-        hash_parts = [md5_hash[i:i + 8] for i in range(0, 32, 8)]
-        numbers = [int(part, 16) for part in hash_parts]
-        total_sum = sum(numbers)
-        product = 1
-        for num in numbers[:4]: product *= (num % 1000) + 1
-        binary_pattern = bin(int(md5_hash[:16], 16))[2:].zfill(64)
-        ones_count = binary_pattern.count('1')
-        zeros_count = binary_pattern.count('0')
+def save_vip_users(users):
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f)
 
-        # --- NÂNG CẤP 1: Cân bằng Tài/Xỉu ---
-        # Thay vì dùng score, ta dùng điểm số dự đoán (3-18) để quyết định T/X
-        # Cách này đảm bảo tỷ lệ T/X gần 50/50 hơn
-        predicted_score = (sum(int(c, 16) for c in md5_hash[:3]) % 16) + 3
+vip_users = load_vip_users()
 
-        if predicted_score >= 11:
-            prediction = "Tài"
-            # Tính score giả lập để hiển thị (không ảnh hưởng kết quả)
-            tai_score = predicted_score * 5 + random.randint(0, 9)
-            xiu_score = 100 - tai_score + random.randint(-5, 5)
+# --- HÀM HỆ THỐNG: KIỂM TRA JOIN NHÓM ---
+def check_member_joined(user_id):
+    if user_id == ADMIN_ID: return True 
+    try:
+        member = bot.get_chat_member(CHANNEL_ID, user_id)
+        if member.status in ['creator', 'administrator', 'member']:
+            return True
+        return False
+    except:
+        return True 
+
+# --- MENU CHÍNH ---
+def main_menu_keyboard():
+    markup = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+    btn1 = KeyboardButton("🌞 SUNWIN")
+    btn2 = KeyboardButton("🔥 HITCLUB")
+    btn3 = KeyboardButton("👤 Tài Khoản")
+    btn4 = KeyboardButton("📞 Hỗ Trợ")
+    markup.add(btn1, btn2, btn3, btn4)
+    return markup
+
+# --- LÕI PHÂN TÍCH ---
+class PredictionEngine:
+    def get_advice(self, confidence):
+        # Đã xóa các ký tự gây lỗi Markdown
+        if confidence >= 80:
+            return random.choice([
+                "🔥 CẦU ĐANG VÀO GUỒNG: Tín hiệu cực kỳ ổn định. Anh em tự tin vào tiền, có thể đi mạnh tay.",
+                "💎 TÍN HIỆU VÀNG: Phân tích lịch sử cho thấy nhịp này rất khó gãy. Cơ hội về bờ là đây.",
+                "🚀 CƠ HỘI LỚN: Cầu đang đi đúng sách giáo khoa. Mạnh dạn gấp thếp nếu đang lãi.",
+                "✅ KHẢ NĂNG NỔ CAO: Thuật toán AI báo về độ trùng khớp 90%. Kèo này thơm phức.",
+                "💰 THỜI ĐIỂM VÀNG: Nhà cái đang nhả cầu này. Tranh thủ húp nhanh gọn lẹ."
+            ])
+        elif confidence >= 65:
+            return random.choice([
+                "🛡️ AN TOÀN LÀ BẠN: Cầu ổn định nhưng chưa bùng nổ. Khuyên anh em đi đều tay.",
+                "👀 QUAN SÁT KỸ: Tín hiệu khá rõ nhưng vẫn cần đề phòng. Đánh mức trung bình.",
+                "⚖️ CÂN BẰNG VỐN: Đừng để lòng tham dẫn dắt. Chia vốn ra đánh.",
+                "🐢 CHẬM MÀ CHẮC: Nhịp cầu đang chuyển giao. Đánh vừa phải thăm dò.",
+                "💡 CHIẾN THUẬT: Cầu này phù hợp đánh rỉa. Không nên gấp thếp ở tay này."
+            ])
         else:
-            prediction = "Xỉu"
-            # Tính score giả lập để hiển thị
-            xiu_score = (18 - predicted_score) * 5 + random.randint(0, 9)
-            tai_score = 100 - xiu_score + random.randint(-5, 5)
+            return random.choice([
+                "⚠️ CẢNH BÁO ĐỎ: Cầu đang cực kỳ loạn. Khuyên chân thành anh em nên BỎ QUA.",
+                "🛑 RỦI RO CAO: Dữ liệu cho thấy pha này dễ bẻ lái. Ngồi xem giữ tiền là thắng.",
+                "☠️ VÙNG TỬ THẦN: Đừng cố đấm ăn xôi. Cầu đang xấu, ra ngoài hít thở đi.",
+                "📉 TÍN HIỆU XẤU: AI không tìm thấy quy luật. Tỷ lệ 50/50 may rủi quá cao.",
+                "🚫 STOP: Đừng để lòng tham làm mờ mắt. Tay này cực khoai."
+            ])
 
-        # Đảm bảo score không âm hoặc > 100
-        tai_score = max(0, min(100, tai_score))
-        xiu_score = max(0, min(100, xiu_score))
+    def analyze(self, input_data):
+        seed_str = str(input_data).strip()
+        hash_obj = hashlib.md5(seed_str.encode()).hexdigest()
+        numbers = [int(c, 16) for c in hash_obj if c.isdigit()]
+        total = sum(numbers)
+        
+        prediction = "TÀI 🔴" if total % 2 == 0 else "XỈU 🔵"
+        
+        random.seed(seed_str) 
+        confidence = round(random.uniform(50.0, 85.0), 2)
+        advice = self.get_advice(confidence)
+        
+        return prediction, confidence, advice
 
-        # --- NÂNG CẤP 2: Độ tin cậy ngẫu nhiên 60-99% ---
-        confidence = round(random.uniform(60.0, 99.0), 2)
+engine = PredictionEngine()
+user_sessions = {} 
 
-        return {
-            'prediction': prediction,
-            'confidence': confidence,
-            'predicted_score': predicted_score, # Vẫn giữ để hiển thị
-            'tai_score': tai_score, # Score giả lập
-            'xiu_score': xiu_score, # Score giả lập
-            'analysis_details': { # Vẫn giữ để "diễn"
-                'total_sum': total_sum,
-                'bit_ratio': f"{ones_count}:{zeros_count}",
-                'hash_pattern': md5_hash[:8] + "..." + md5_hash[-8:]
-            }
-        }
-
-# Khởi tạo predictor V5.3
-predictor = TaiXiuPredictorV5_3()
-
-# --- MODULE 1: LỆNH PHÂN QUYỀN (CHỈ ADMIN DÙNG) ---
-# (Giữ nguyên không đổi)
-def is_admin(user_id):
-    return user_id == ADMIN_ID
-
-@bot.message_handler(commands=['approve'])
-def approve_user(message):
-    if not is_admin(message.from_user.id):
-        bot.reply_to(message, "❌ Bạn không có quyền dùng lệnh này.")
-        return
+# --- CÁC LỆNH ADMIN ---
+@bot.message_handler(commands=['capquyen'])
+def cap_quyen(message):
+    if message.from_user.id != ADMIN_ID: return 
     try:
-        user_id_to_approve = int(message.text.split()[1])
-        authorized_users.add(user_id_to_approve)
-        bot.reply_to(message, f"✅ ĐÃ CẤP QUYỀN cho User ID: {user_id_to_approve}")
-        bot.send_message(user_id_to_approve, "🎉 **XIN CHÚC MỪNG!**\nTài khoản Bot Tài Xỉu của bạn đã được Admin duyệt.")
-    except Exception as e:
-        bot.reply_to(message, "Lỗi cú pháp. Dùng: /approve <USER_ID>")
+        uid = int(message.text.split()[1])
+        if uid not in vip_users:
+            vip_users.append(uid)
+            save_vip_users(vip_users)
+            bot.reply_to(message, f"✅ Đã kích hoạt VIP cho ID: `{uid}`", parse_mode="Markdown")
+            try:
+                bot.send_message(uid, "🎉 **CHÚC MỪNG!** Tài khoản đã kích hoạt. Bấm /start để dùng.", parse_mode="Markdown")
+            except: pass
+        else:
+            bot.reply_to(message, "⚠️ ID này đã là VIP rồi.")
+    except:
+        bot.reply_to(message, "❌ Dùng: `/capquyen <ID>`", parse_mode="Markdown")
 
-@bot.message_handler(commands=['revoke'])
-def revoke_user(message):
-    if not is_admin(message.from_user.id):
-        bot.reply_to(message, "❌ Bạn không có quyền dùng lệnh này.")
-        return
+@bot.message_handler(commands=['xoaquyen'])
+def xoa_quyen(message):
+    if message.from_user.id != ADMIN_ID: return
     try:
-        user_id_to_revoke = int(message.text.split()[1])
-        authorized_users.discard(user_id_to_revoke)
-        bot.reply_to(message, f"🚫 ĐÃ THU HỒI QUYỀN của User ID: {user_id_to_revoke}")
-    except Exception as e:
-        bot.reply_to(message, "Lỗi cú pháp. Dùng: /revoke <USER_ID>")
+        uid = int(message.text.split()[1])
+        if uid in vip_users:
+            vip_users.remove(uid)
+            save_vip_users(vip_users)
+            bot.reply_to(message, f"🚫 Đã xóa VIP của ID: `{uid}`", parse_mode="Markdown")
+        else:
+            bot.reply_to(message, "⚠️ ID này chưa phải VIP.")
+    except:
+        bot.reply_to(message, "❌ Dùng: `/xoaquyen <ID>`", parse_mode="Markdown")
 
-@bot.message_handler(commands=['listusers'])
-def list_users(message):
-    if not is_admin(message.from_user.id):
-        bot.reply_to(message, "❌ Bạn không có quyền dùng lệnh này.")
-        return
-    if not authorized_users:
-        bot.reply_to(message, "Danh sách trắng đang trống.")
-        return
-    user_list = "\n".join([str(uid) for uid in authorized_users])
-    bot.reply_to(message, f"--- DANH SÁCH ĐƯỢC CẤP QUYỀN ---\n{user_list}")
-
-
-# --- MODULE 2: LỆNH CHO NGƯỜI DÙNG (ĐÃ NÂNG CẤP) ---
-
+# --- XỬ LÝ START ---
 @bot.message_handler(commands=['start'])
-def start_cmd(message):
+def start_command(message):
     user_id = message.from_user.id
-    safe_admin_username = ADMIN_USERNAME.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`')
+    welcome_msg = f"👋 Xin chào {message.from_user.first_name}!\nChào mừng đến với **TOOL TX PRO V7.5**.\n\n👇 **SỬ DỤNG MENU BÊN DƯỚI:**"
+    bot.send_message(message.chat.id, welcome_msg, reply_markup=main_menu_keyboard(), parse_mode="Markdown")
 
-    welcome = f"""
-🎰 **BOT DỰ ĐOÁN TÀI XỈU (Bản Cố Vấn V5.3) dành cho SUN WIN** 🎰
+# --- NÚT MENU ---
+@bot.message_handler(func=lambda message: message.text == "👤 Tài Khoản")
+def my_account(message):
+    status = "✅ VIP" if message.from_user.id in vip_users else "🔒 Chưa kích hoạt"
+    bot.reply_to(message, f"👤 **TÀI KHOẢN**\n🆔 ID: `{message.from_user.id}`\n🏷 Trạng Thái: {status}", parse_mode="Markdown")
 
-Chào mừng {message.from_user.first_name},
+@bot.message_handler(func=lambda message: message.text == "📞 Hỗ Trợ")
+def support(message):
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("💬 Nhắn Tin Admin", url=f"https://t.me/{ADMIN_USERNAME}")) 
+    bot.reply_to(message, "📞 Cần hỗ trợ? Liên hệ ngay:", reply_markup=markup)
 
-Đây là công cụ quét Tài Xỉu ĐỘC QUYỀN, sử dụng thuật toán phân tích mã phiên để dự đoán kết quả.
-
-⚠️ **TRẠNG THÁI TRUY CẬP:** {"✅ **ĐÃ KÍCH HOẠT**" if user_id in authorized_users else f"🚫 **CHƯA KÍCH HOẠT** (Liên hệ: {safe_admin_username})"}
-
-Để được cấp quyền sử dụng Bot:
-1.  **Đăng ký** tài khoản qua link đại lý của Admin.
-2.  **Nạp tiền** lần đầu để kích hoạt tài khoản.
-3.  **Liên hệ Admin** ({safe_admin_username}) để được duyệt.
-
-Nếu bạn đã được duyệt, sử dụng lệnh:
-`/tx <MÃ PHIÊN>`
-Ví dụ: `/tx abc123def456`
-    """
-    bot.reply_to(message, welcome, parse_mode='Markdown')
-
-@bot.message_handler(commands=['getid'])
-def get_id(message):
+@bot.message_handler(func=lambda message: message.text in ["🌞 SUNWIN", "🔥 HITCLUB"])
+def chon_game(message):
     user_id = message.from_user.id
-    safe_admin_username = ADMIN_USERNAME.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`')
-    bot.reply_to(message,
-                 f"🆔 User ID Telegram của bạn là:\n`{user_id}`\n\n(Gửi ID này cho Admin {safe_admin_username} để được duyệt)",
-                 parse_mode='Markdown')
-
-# --- HÀM XỬ LÝ LỆNH /tx (V5.3 - ĐÃ NÂNG CẤP) ---
-@bot.message_handler(commands=['tx'])
-def handle_tx_command(message):
-    user_id = message.from_user.id
-    safe_admin_username = ADMIN_USERNAME.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`')
-
-    if user_id not in authorized_users:
-        bot.reply_to(message,
-                     f"🚫 **TRUY CẬP BỊ TỪ CHỐI** 🚫\nVui lòng liên hệ Admin ({safe_admin_username}) để đăng ký và kích hoạt.",
-                     parse_mode='Markdown')
+    
+    if not check_member_joined(user_id):
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("👉 VÀO NHÓM NGAY", url=CHANNEL_LINK))
+        bot.send_message(message.chat.id, "🚫 Bạn chưa vào nhóm.", reply_markup=markup)
         return
 
-    try:
-        user_input = message.text.split(maxsplit=1)[1].strip()
-        if not (4 <= len(user_input) <= 100):
-            raise ValueError("Độ dài mã phiên không hợp lệ.")
-    except (IndexError, ValueError):
-        bot.reply_to(message, "❌ **Sai cú pháp!**\nDùng: `/tx <MÃ PHIÊN>`\nVí dụ: `/tx abc123def456`",
-                     parse_mode='Markdown')
+    if user_id not in vip_users:
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("💬 LIÊN HỆ ADMIN", url=f"https://t.me/{ADMIN_USERNAME}"))
+        bot.send_message(message.chat.id, f"🔒 **CHƯA KÍCH HOẠT!**\n🆔 ID: `{user_id}`\nLiên hệ Admin để mua gói.", reply_markup=markup, parse_mode="Markdown")
         return
 
-    # --- BỘ GIẢI MÃ ĐA NĂNG (V5.0) ---
-    fake_md5 = hashlib.md5(user_input.encode()).hexdigest()
+    game = message.text
+    # Xóa session cũ để tránh lỗi
+    if user_id in user_sessions: del user_sessions[user_id]
 
-    # --- LÕI PHÂN TÍCH V5.3 ---
-    try:
-        # Sử dụng hàm phân tích mới V5.3
-        result = predictor.advanced_md5_analysis_v5_3(fake_md5)
+    if "SUNWIN" in game:
+        user_sessions[user_id] = {"game": "SUNWIN", "mode": "TX", "last_phien": 0}
+        bot.send_message(message.chat.id, "🌞 **SUNWIN (Tài Xỉu)**\n👉 Nhập **MÃ PHIÊN** (Số) để soi:", parse_mode="Markdown")
+    
+    elif "HITCLUB" in game:
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🎲 TX Thường", callback_data="hit_tx"))
+        markup.add(InlineKeyboardButton("🔐 TX MD5", callback_data="hit_md5"))
+        bot.send_message(message.chat.id, "🔥 **HITCLUB - Chọn chế độ:**", reply_markup=markup, parse_mode="Markdown")
 
-        # --- NÂNG CẤP 3: Thêm "Lời Khuyên Chiến Lược" ngẫu nhiên ---
-        advice = ""
-        # 30% cơ hội đưa ra lời khuyên (giống bot Baccarat)
-        if random.choice([1, 2, 3]) == 3:
-            advice = "\n\n**=> LỜI KHUYÊN CHIẾN LƯỢC:**\nAI phát hiện 'Tín Hiệu Nhiễu'. Độ tin cậy cao nhưng vẫn có rủi ro. Khuyến nghị **VÀO VỐN NHỎ** (lót) ở tay này."
+# --- XỬ LÝ CALLBACK (NÚT BẤM) ---
+@bot.callback_query_handler(func=lambda call: True)
+def handle_query(call):
+    user_id = call.from_user.id
+    
+    # FIX LỖI MODE: Đảm bảo gán đúng chế độ khi bấm nút
+    if call.data == "hit_tx":
+        user_sessions[user_id] = {"game": "HITCLUB", "mode": "TX", "last_phien": 0}
+        bot.edit_message_text("🔥 **HITCLUB (TX Thường)**\n👉 Nhập **MÃ PHIÊN** (Số) để soi:", call.message.chat.id, call.message.message_id, parse_mode="Markdown")
+    
+    elif call.data == "hit_md5":
+        user_sessions[user_id] = {"game": "HITCLUB", "mode": "MD5"}
+        bot.edit_message_text("🔐 **HITCLUB (MD5)**\n👉 Copy & Dán **chuỗi MD5** vào đây:", call.message.chat.id, call.message.message_id, parse_mode="Markdown")
 
-        # Trả kết quả
-        response = f"""
-📊 **PHÂN TÍCH Kết Quả HOÀN TẤT**
+    elif call.data == "next_session":
+        if user_id not in user_sessions:
+            bot.answer_callback_query(call.id, "⚠️ Phiên hết hạn. Chọn lại game.", show_alert=True)
+            return
+        if user_sessions[user_id]["mode"] == "MD5":
+            bot.answer_callback_query(call.id, "❌ MD5 không tự nhảy phiên.", show_alert=True)
+            return
+        
+        next_phien = user_sessions[user_id]["last_phien"] + 1
+        user_sessions[user_id]["last_phien"] = next_phien
+        process_prediction(call.message, next_phien)
 
-🔢 **Mã Phiên:** `{user_input}` (Đã giải mã)
-🎯 **Dự đoán:** **{result['prediction']}**
-📈 **Độ tin cậy:** {result['confidence']}%
+# --- XỬ LÝ INPUT ---
+@bot.message_handler(func=lambda message: message.text.strip() not in ["🌞 SUNWIN", "🔥 HITCLUB", "👤 Tài Khoản", "📞 Hỗ Trợ"])
+def handle_input(message):
+    user_id = message.from_user.id
+    if user_id not in vip_users: return 
+    if user_id not in user_sessions:
+        bot.reply_to(message, "⚠️ Vui lòng chọn Cổng Game trước!")
+        return
 
-📋 **CHI TIẾT PHÂN TÍCH (Giả Lập):**
-• Điểm Tài: {result['tai_score']}/100
-• Điểm Xỉu: {result['xiu_score']}/100
-• Điểm dự đoán: {result['predicted_score']}
-• Tổng hash: {result['analysis_details']['total_sum']}
-• Bit pattern: {result['analysis_details']['bit_ratio']}
+    data = message.text.strip()
+    session = user_sessions[user_id]
 
-💡 **LƯU Ý:** Phân tích dựa trên thuật toán AI độc quyền.
-Kết quả có độ chính xác cao.
+    # Phân loại xử lý dựa trên MODE đã chọn
+    if session["mode"] == "TX":
+        if not data.isdigit():
+            bot.reply_to(message, "❌ Mã phiên phải là số!")
+            return
+        user_sessions[user_id]["last_phien"] = int(data)
+        process_prediction(message, int(data))
+    
+    elif session["mode"] == "MD5":
+        process_prediction(message, data)
 
-🎲 **QUYẾT ĐỊNH CUỐI CÙNG:** **{result['prediction']}**
+# --- HÀM TRẢ KẾT QUẢ (FIXED MARKDOWN) ---
+def process_prediction(message, input_data):
+    user_id = message.from_user.id
+    session = user_sessions[user_id]
+    
+    wait = bot.send_message(message.chat.id, "🔄 **Đang phân tích...**", parse_mode="Markdown")
+    time.sleep(1.5)
+    
+    pred, conf, advice = engine.analyze(input_data)
+    
+    bar = "▓" * int((conf-50)/3.5) + "░" * (10 - int((conf-50)/3.5))
+
+    text = f"""
+🎰 **KẾT QUẢ SOI CẦU {session['game']}**
+────────────────
+🆔 **Phiên:** `{input_data}`
+🛠 **Chế độ:** {session['mode']}
+
+📊 **PHÂN TÍCH:**
+• Tỷ lệ: `{conf}%`
+• Tín hiệu: [{bar}]
+
+🎯 **DỰ ĐOÁN:**
+# ✨ {pred} ✨
+
+💡 **LỜI KHUYÊN:**
 {advice}
-        """
-        bot.reply_to(message, response, parse_mode='Markdown')
+────────────────
+⚠️ _Kết quả tham khảo. Vui lòng quản lý vốn._
+"""
+    markup = None
+    if session["mode"] == "TX":
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton(f"🔮 Soi Phiên Tiếp ({int(input_data)+1}) ⏩", callback_data="next_session"))
 
-    except Exception as e:
-        bot.reply_to(message, f"Lỗi hệ thống phân tích. Vui lòng thử lại sau. \nChi tiết: {e}")
-
+    bot.delete_message(message.chat.id, wait.message_id)
+    bot.send_message(message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
 
 # --- CHẠY BOT ---
-if __name__ == "__main__":
-    print("🚀 Bot Tài Xỉu V5.3 (Cố Vấn TX) đang chạy...")
-    bot.polling(none_stop=True)
+print("🚀 Bot TX PRO V7.5 (Fix Bug & Clean) đang chạy...")
+bot.infinity_polling()
